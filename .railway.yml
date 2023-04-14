@@ -1,0 +1,48 @@
+name: shamo-backend
+variables:
+  # tambahkan variabel lingkungan yang diperlukan
+  APP_KEY: base64:dDGOxQJUVM50QsnbYtoBWJC8x4sI0QPd4/rTTUxl0XA=
+  DB_CONNECTION: mysql
+  DB_HOST: 127.0.0.1
+  DB_PORT: 3306
+  DB_DATABASE: shamo_app
+  DB_USERNAME: root
+  DB_PASSWORD:
+
+services:
+  # tambahkan service yang diperlukan seperti database
+  db:
+    image: railway/mysql:8
+    port: 3306
+    env:
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+    disk: 1024
+
+build:
+  # konfigurasi untuk build dan deploy
+  frontend:
+    builder: railwayapp/node:16-buster
+    commands:
+      - npm install
+      - npm run prod
+  backend:
+    builder: railwayapp/php:8.0
+    commands:
+      - cp .env.example .env
+      - composer install --no-dev
+      - php artisan key:generate
+      - php artisan migrate
+      - php artisan config:cache
+    env:
+      APP_ENV: production
+      APP_DEBUG: false
+
+deploy:
+  # konfigurasi untuk deploy
+  production:
+    branch: main
+    commands:
+      - railway run frontend
+      - railway run backend
